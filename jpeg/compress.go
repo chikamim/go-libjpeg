@@ -4,6 +4,7 @@ package jpeg
 #include <stdio.h>
 #include <stdlib.h>
 #include "jpeglib.h"
+#include "jpegint.h"
 #include "jpeg.h"
 
 void error_panic(j_common_ptr cinfo);
@@ -16,6 +17,9 @@ static struct jpeg_compress_struct *new_compress(void) {
 	jerr->error_exit = (void *)error_panic;
 	jpeg_create_compress(cinfo);
 	cinfo->err = jerr;
+
+printf("HELLO");
+fprintf(stderr, "HELLO ERR");
 
 	return cinfo;
 }
@@ -78,6 +82,53 @@ static void encode_ycbcr(j_compress_ptr cinfo, JSAMPROW y_row, JSAMPROW cb_row, 
 		// Get the data
 		v += jpeg_write_raw_data(cinfo, image, DCTSIZE * cinfo->comp_info[0].v_samp_factor);
 	}
+}
+
+void print_cinfo(j_compress_ptr cinfo) {
+  if (!cinfo) {
+    fprintf(stderr,"print_cinfo called with NULL cinfo\n");
+  }
+
+  fprintf(stderr, "printing cinfo...\n");
+
+  fprintf(stderr, "num_scans: %d\n", cinfo->num_scans);
+  fprintf(stderr, "arith_code: %d\n", cinfo->arith_code);
+  fprintf(stderr, "optimize_coding: %d\n", cinfo->optimize_coding);
+  fprintf(stderr, "CCIR601_sampling: %d\n", cinfo->CCIR601_sampling);
+#if JPEG_LIB_VERSION >= 70
+  fprintf(stderr, "do_fancy_downsampling: %d\n", cinfo->do_fancy_downsampling);
+#endif
+  fprintf(stderr, "smoothing_factor %d\n", cinfo->smoothing_factor);
+  fprintf(stderr, "dct_method: %d\n", cinfo->dct_method);
+
+  if (cinfo->master) {
+    fprintf(stderr, "optimize_scans: %d\n", cinfo->master->optimize_scans);
+    fprintf(stderr, "trellis_quant: %d\n", cinfo->master->trellis_quant);
+    fprintf(stderr, "trellis_quant_dc: %d\n", cinfo->master->trellis_quant_dc);
+    fprintf(stderr, "trellis_eob_opt: %d\n", cinfo->master->trellis_eob_opt);
+    fprintf(stderr, "use_lambda_weight_tbl: %d\n", cinfo->master->use_lambda_weight_tbl);
+    fprintf(stderr, "use_scans_in_trellis: %d\n", cinfo->master->use_scans_in_trellis);
+    fprintf(stderr, "trellis_passes: %d\n", cinfo->master->trellis_passes);
+    fprintf(stderr, "trellis_q_opt: %d\n", cinfo->master->trellis_q_opt);
+    fprintf(stderr, "overshoot_deringing: %d\n", cinfo->master->overshoot_deringing);
+    fprintf(stderr, "compress_profile: %d\n", cinfo->master->compress_profile);
+    fprintf(stderr, "dc_scan_opt_mode: %d\n", cinfo->master->dc_scan_opt_mode);
+    fprintf(stderr, "quant_tbl_master_idx: %d\n", cinfo->master->quant_tbl_master_idx);
+    fprintf(stderr, "trellis_freq_split: %d\n", cinfo->master->trellis_freq_split);
+    fprintf(stderr, "trellis_num_loops: %d\n", cinfo->master->trellis_num_loops);
+    fprintf(stderr, "num_scans_luma: %d\n", cinfo->master->num_scans_luma);
+    fprintf(stderr, "num_scans_luma_dc: %d\n", cinfo->master->num_scans_luma_dc);
+    fprintf(stderr, "num_scans_chroma_dc: %d\n", cinfo->master->num_scans_chroma_dc);
+    fprintf(stderr, "num_frequency_splits: %d\n", cinfo->master->num_frequency_splits);
+    fprintf(stderr, "Al_max_luma: %d\n", cinfo->master->Al_max_luma);
+    fprintf(stderr, "Al_max_chroma: %d\n", cinfo->master->Al_max_chroma);
+    fprintf(stderr, "lambda_log_scale1: %f\n", cinfo->master->lambda_log_scale1);
+    fprintf(stderr, "lambda_log_scale2: %f\n", cinfo->master->lambda_log_scale2);
+    fprintf(stderr, "trellis_delta_dc_weight: %f\n", cinfo->master->trellis_delta_dc_weight);
+  } else {
+    fprintf(stderr, "cinfo->master was NULL\n");
+  }
+  fprintf(stderr, "\n");
 }
 
 */
@@ -187,6 +238,9 @@ func encodeYCbCr(cinfo *C.struct_jpeg_compress_struct, src *image.YCbCr, p *Enco
 		C.int(src.CStride),
 		C.int(colorVDiv),
 	)
+
+	C.print_cinfo(cinfo)
+
 	C.jpeg_finish_compress(cinfo)
 	return
 }
@@ -208,6 +262,9 @@ func encodeRGBA(cinfo *C.struct_jpeg_compress_struct, src *image.RGBA, p *Encode
 	// Start compression
 	C.jpeg_start_compress(cinfo, C.TRUE)
 	C.encode_rgba(cinfo, C.JSAMPROW(unsafe.Pointer(&src.Pix[0])), C.int(src.Stride))
+
+	C.print_cinfo(cinfo)
+
 	C.jpeg_finish_compress(cinfo)
 	return
 }
@@ -229,6 +286,9 @@ func encodeNRGBA(cinfo *C.struct_jpeg_compress_struct, src *image.NRGBA, p *Enco
 	// Start compression
 	C.jpeg_start_compress(cinfo, C.TRUE)
 	C.encode_rgba(cinfo, C.JSAMPROW(unsafe.Pointer(&src.Pix[0])), C.int(src.Stride))
+
+	C.print_cinfo(cinfo)
+
 	C.jpeg_finish_compress(cinfo)
 	return
 }
@@ -269,4 +329,6 @@ func setupEncoderOptions(cinfo *C.struct_jpeg_compress_struct, opt *EncoderOptio
 		C.jpeg_simple_progression(cinfo)
 	}
 	cinfo.dct_method = C.J_DCT_METHOD(opt.DCTMethod)
+
+	C.print_cinfo(cinfo)
 }
