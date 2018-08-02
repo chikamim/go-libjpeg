@@ -9,7 +9,8 @@ package jpeg
 //
 
 /*
-#cgo LDFLAGS: -ljpeg-turbo
+#cgo LDFLAGS: -ljpeg -L/usr/local/opt/jpeg-turbo/lib
+#cgo CPPFLAGS: -I/usr/local/opt/jpeg-turbo/include
 #include <stdlib.h>
 #include <stdio.h>
 #include <jpeglib.h>
